@@ -363,3 +363,9 @@ MigrationBackup/
 FodyWeavers.xsd
 
 keys
+
+.idea/*
+!.idea/filetypes.xml
+!.idea/modules.xml
+!.idea/vcs.xml
+!.idea/.gitignore
