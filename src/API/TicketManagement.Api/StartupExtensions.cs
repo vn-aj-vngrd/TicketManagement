@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using TicketManagement.Api.Services;
 using TicketManagement.Application;
+using TicketManagement.Application.Contracts;
 using TicketManagement.Infrastructure;
 using TicketManagement.Persistence;
 
@@ -13,6 +15,10 @@ public static class StartupExtensions
         builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddPersistenceServices(builder.Configuration);
 
+        builder.Services.AddScoped<ILoggedInUserService, LoggedInUserService>();
+
+        builder.Services.AddHttpContextAccessor();
+
         builder.Services.AddControllers();
 
         builder
@@ -23,13 +29,8 @@ public static class StartupExtensions
                         "open",
                         policy =>
                             policy
-                                .WithOrigins(
-
-                                    [
-                                        builder.Configuration["ApiUrl"] ?? "https://localhost:7020",
-                                        builder.Configuration["BlazorUrl"] ?? "https://localhost:7080"
-                                    ]
-                                )
+                                .WithOrigins(builder.Configuration["ApiUrl"] ?? "https://localhost:7020",
+                                    builder.Configuration["BlazorUrl"] ?? "https://localhost:7080")
                                 .AllowAnyMethod()
                                 .SetIsOriginAllowed(pol => true)
                                 .AllowAnyHeader()

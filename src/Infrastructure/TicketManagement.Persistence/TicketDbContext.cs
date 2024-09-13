@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
+using TicketManagement.Application.Contracts;
 using TicketManagement.Domain.Common;
 using TicketManagement.Domain.Entities;
 
@@ -7,8 +7,20 @@ namespace TicketManagement.Persistence;
 
 public class TicketDbContext : DbContext
 {
+    private readonly ILoggedInUserService? _loggedInUserService;
+
     public TicketDbContext(DbContextOptions<TicketDbContext> options)
-        : base(options) { }
+        : base(options)
+    {
+    }
+
+    public TicketDbContext(
+        DbContextOptions<TicketDbContext> options,
+        ILoggedInUserService loggedInUserService
+    ) : base(options)
+    {
+        _loggedInUserService = loggedInUserService;
+    }
 
     public DbSet<Event> Events { get; set; }
     public DbSet<Category> Categories { get; set; }
@@ -236,21 +248,22 @@ public class TicketDbContext : DbContext
     }
 
     public override Task<int> SaveChangesAsync(
-        CancellationToken cancellationToken = new CancellationToken()
+        CancellationToken cancellationToken = new()
     )
     {
         foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
-        {
             switch (entry.State)
             {
                 case EntityState.Added:
                     entry.Entity.CreatedDate = DateTime.Now;
+                    entry.Entity.CreatedBy = _loggedInUserService?.UserId;
                     break;
                 case EntityState.Modified:
                     entry.Entity.LastModifiedDate = DateTime.Now;
+                    entry.Entity.LastModifiedBy = _loggedInUserService?.UserId;
                     break;
             }
-        }
+
         return base.SaveChangesAsync(cancellationToken);
     }
 }
