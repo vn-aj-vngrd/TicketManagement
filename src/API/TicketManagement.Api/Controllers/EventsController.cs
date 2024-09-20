@@ -8,7 +8,7 @@ using TicketManagement.Application.Features.Events.Queries.GetEventsList;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GloboTicket.TicketManagement.Api.Controllers
+namespace TicketManagement.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
