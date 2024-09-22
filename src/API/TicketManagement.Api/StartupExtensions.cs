@@ -1,7 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using TicketManagement.Api.Middleware;
 using TicketManagement.Api.Services;
 using TicketManagement.Application;
 using TicketManagement.Application.Contracts;
+using TicketManagement.Identity;
+using TicketManagement.Identity.Models;
 using TicketManagement.Infrastructure;
 using TicketManagement.Persistence;
 
@@ -14,6 +19,7 @@ public static class StartupExtensions
         builder.Services.AddApplicationServices();
         builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddPersistenceServices(builder.Configuration);
+        builder.Services.AddIdentityServices(builder.Configuration);
 
         builder.Services.AddScoped<ILoggedInUserService, LoggedInUserService>();
 
@@ -29,8 +35,10 @@ public static class StartupExtensions
                         "open",
                         policy =>
                             policy
-                                .WithOrigins(builder.Configuration["ApiUrl"] ?? "https://localhost:7020",
-                                    builder.Configuration["BlazorUrl"] ?? "https://localhost:7080")
+                                .WithOrigins(
+                                    builder.Configuration["ApiUrl"] ?? "https://localhost:7020",
+                                    builder.Configuration["BlazorUrl"] ?? "https://localhost:7080"
+                                )
                                 .AllowAnyMethod()
                                 .SetIsOriginAllowed(pol => true)
                                 .AllowAnyHeader()
@@ -38,6 +46,7 @@ public static class StartupExtensions
                     )
             );
 
+        builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
 
         return builder.Build();
@@ -45,6 +54,17 @@ public static class StartupExtensions
 
     public static WebApplication ConfigurePipeline(this WebApplication app)
     {
+        app.MapIdentityApi<ApplicationUser>();
+
+        app.MapPost(
+            "/Logout",
+            async (ClaimsPrincipal user, SignInManager<ApplicationUser> signInManager) =>
+            {
+                await signInManager.SignOutAsync();
+                return TypedResults.Ok();
+            }
+        );
+
         app.UseCors("open");
 
         if (app.Environment.IsDevelopment())
@@ -52,6 +72,8 @@ public static class StartupExtensions
             app.UseSwagger();
             app.UseSwaggerUI();
         }
+
+        app.UseCustomExceptionHandler();
 
         app.UseHttpsRedirection();
         app.MapControllers();
